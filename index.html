@@ -6,7 +6,7 @@
   <title>FL-21 Beach Safety Tracker</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #06101f; display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; padding: 2rem 1rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { background: #06101f; display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; padding: 0; zoom: 1.15; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 
     .widget { background: #0a1628; color: #e8dcc8; border-radius: 12px; overflow: hidden; max-width: 860px; width: 100%; border: 1px solid rgba(180,150,80,0.25); }
     .header { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px 11px; border-bottom: 1px solid rgba(180,150,80,0.2); background: rgba(0,0,0,0.25); flex-wrap: wrap; gap: 8px; }
@@ -139,8 +139,13 @@
 
   <div class="footer">
     <div class="footer-time" id="update-time">Updating...</div>
-    <div class="footer-src">NWS Melbourne (KMLB) &amp; NWS Miami (KMFL) &middot; mast.house.gov</div>
-  </div>
+    <div class="footer-src">
+      <a href="https://www.weather.gov/mlb" target="_blank" rel="noopener" style="color:inherit">NWS Melbourne (KMLB)</a>
+      &amp;
+      <a href="https://www.weather.gov/mfl" target="_blank" rel="noopener" style="color:inherit">NWS Miami (KMFL)</a>
+      &middot;
+      <a href="https://mast.house.gov" target="_blank" rel="noopener" style="color:inherit">mast.house.gov</a>
+    </div>
 </div>
 
 <script>
