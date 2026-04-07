@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FL-21 Beach Safety Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #06101f; display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; padding: 2rem 1rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+    .widget { background: #0a1628; color: #e8dcc8; border-radius: 12px; overflow: hidden; max-width: 860px; width: 100%; border: 1px solid rgba(180,150,80,0.25); }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px 11px; border-bottom: 1px solid rgba(180,150,80,0.2); background: rgba(0,0,0,0.25); flex-wrap: wrap; gap: 8px; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .seal { width: 34px; height: 34px; border-radius: 50%; background: #7a1515; border: 1.5px solid rgba(180,150,80,0.5); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: #e8dcc8; flex-shrink: 0; }
+    .header-title { font-size: 14px; font-weight: 500; color: #e8dcc8; line-height: 1.2; }
+    .header-sub { font-size: 10px; color: rgba(232,220,200,0.5); margin-top: 2px; }
+    .live-pill { display: flex; align-items: center; gap: 5px; font-size: 10px; color: rgba(232,220,200,0.55); background: rgba(255,255,255,0.04); border: 0.5px solid rgba(180,150,80,0.2); border-radius: 20px; padding: 4px 10px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; animation: pulse 2s infinite; flex-shrink: 0; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    .body { display: flex; min-height: 340px; }
+
+    .map-col { flex: 0 0 200px; border-right: 1px solid rgba(180,150,80,0.15); padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .map-lbl { font-size: 9px; letter-spacing: 0.1em; color: rgba(180,150,80,0.55); text-transform: uppercase; }
+    .zones-list { width: 100%; display: flex; flex-direction: column; gap: 5px; }
+    .zone-row { display: flex; align-items: center; gap: 7px; padding: 7px 9px; background: rgba(255,255,255,0.03); border: 0.5px solid rgba(180,150,80,0.1); border-radius: 7px; }
+    .zone-pip { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .zone-info { flex: 1; min-width: 0; }
+    .zone-name { font-size: 10px; color: rgba(232,220,200,0.7); line-height: 1.2; }
+    .zone-beach { font-size: 9px; color: rgba(232,220,200,0.38); margin-top: 1px; }
+    .zone-risk { font-size: 10px; font-weight: 500; white-space: nowrap; }
+    .zone-src { font-size: 8px; color: rgba(180,150,80,0.4); margin-top: 2px; }
+
+    .data-col { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .section-label { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(180,150,80,0.65); margin-bottom: 7px; }
+
+    .banners { display: flex; flex-direction: column; gap: 7px; }
+    .risk-banner { border-radius: 8px; padding: 10px 13px; display: flex; align-items: center; gap: 12px; border: 0.5px solid rgba(255,255,255,0.06); }
+    .banner-label { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(232,220,200,0.4); margin-bottom: 2px; }
+    .banner-risk { font-size: 17px; font-weight: 500; line-height: 1; }
+    .banner-detail { font-size: 10px; margin-top: 3px; color: rgba(232,220,200,0.55); }
+    .banner-surf { font-size: 11px; font-weight: 500; color: rgba(232,220,200,0.7); text-align: right; white-space: nowrap; }
+    .banner-surf-lbl { font-size: 9px; color: rgba(232,220,200,0.35); text-align: right; }
+
+    .divider { height: 0.5px; background: rgba(180,150,80,0.12); flex-shrink: 0; }
+
+    .forecast-wrap { overflow-x: auto; }
+    .forecast-table { width: 100%; border-collapse: collapse; min-width: 380px; }
+    .forecast-table th { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(232,220,200,0.35); font-weight: 400; padding: 0 6px 6px 0; text-align: left; white-space: nowrap; }
+    .forecast-table td { font-size: 11px; padding: 5px 6px 5px 0; border-top: 0.5px solid rgba(180,150,80,0.08); color: rgba(232,220,200,0.75); vertical-align: middle; }
+    .forecast-table td:first-child { color: rgba(232,220,200,0.45); font-size: 10px; padding-right: 10px; }
+    .risk-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+
+    .safety-tip { padding: 9px 12px; background: rgba(255,255,255,0.025); border-radius: 8px; border: 0.5px solid rgba(180,150,80,0.1); font-size: 11px; color: rgba(232,220,200,0.45); line-height: 1.6; }
+    .safety-tip a { color: rgba(180,150,80,0.7); text-decoration: none; }
+
+    .footer { padding: 7px 20px; border-top: 1px solid rgba(180,150,80,0.15); background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+    .footer-time { font-size: 10px; color: rgba(232,220,200,0.35); }
+    .footer-src { font-size: 10px; color: rgba(232,220,200,0.28); }
+
+    .risk-high { color: #e05252; } .risk-moderate { color: #e09a30; } .risk-low { color: #4caf50; } .risk-unknown { color: rgba(232,220,200,0.35); }
+    .pip-high { background: #e05252; } .pip-moderate { background: #e09a30; } .pip-low { background: #4caf50; } .pip-unknown { background: #555; }
+    .banner-high { background: rgba(224,82,82,0.1); border-color: rgba(224,82,82,0.22) !important; }
+    .banner-moderate { background: rgba(224,154,48,0.1); border-color: rgba(224,154,48,0.22) !important; }
+    .banner-low { background: rgba(76,175,80,0.1); border-color: rgba(76,175,80,0.22) !important; }
+    .banner-unknown { background: rgba(255,255,255,0.02); }
+    .badge-high { background: rgba(224,82,82,0.18); color: #e05252; }
+    .badge-moderate { background: rgba(224,154,48,0.18); color: #e09a30; }
+    .badge-low { background: rgba(76,175,80,0.18); color: #4caf50; }
+    .badge-unknown { background: rgba(255,255,255,0.05); color: rgba(232,220,200,0.4); }
+
+    @media (max-width: 600px) {
+      .body { flex-direction: column; }
+      .map-col { flex: none; border-right: none; border-bottom: 1px solid rgba(180,150,80,0.15); }
+      .map-col svg { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="widget">
+  <div class="header">
+    <div class="header-left">
+      <div class="seal">21</div>
+      <div>
+        <div class="header-title">FL-21 Beach Safety Tracker</div>
+        <div class="header-sub">Rep. Brian Mast &middot; Palm Beach, Martin &amp; St. Lucie Counties</div>
+      </div>
+    </div>
+    <div class="live-pill"><div class="dot"></div> NWS Live</div>
+  </div>
+
+  <div class="body">
+    <div class="map-col">
+      <svg viewBox="80 80 200 360" width="140" height="210" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 210,8 L 260,8 L 270,20 L 275,30 L 278,40 L 280,55 L 282,70 L 284,90 L 285,105 L 287,120 L 289,140 L 291,158 L 293,175 L 295,192 L 297,208 L 299,225 L 301,240 L 303,255 L 305,268 L 307,282 L 309,295 L 311,308 L 313,320 L 315,332 L 318,345 L 321,358 L 325,370 L 330,382 L 336,393 L 343,404 L 350,414 L 357,424 L 362,432 L 365,438 L 367,443 L 368,450 L 368,456 L 366,461 L 363,466 L 358,470 L 352,474 L 345,477 L 336,480 L 325,483 L 312,485 L 298,487 L 282,488 L 265,489 L 248,490 L 232,490 L 218,490 L 205,489 L 195,488 L 186,486 L 178,484 L 171,481 L 165,477 L 160,472 L 155,466 L 151,459 L 148,451 L 148,442 L 149,434 L 152,426 L 156,419 L 162,413 L 170,408 L 178,405 L 185,403 L 192,402 L 200,401 L 210,400 L 220,399 L 229,398 L 237,397 L 243,395 L 248,393 L 251,390 L 253,387 L 254,383 L 253,379 L 251,375 L 248,370 L 244,364 L 238,358 L 231,351 L 224,344 L 216,336 L 208,327 L 200,318 L 192,308 L 184,298 L 176,288 L 168,277 L 161,266 L 154,255 L 147,244 L 140,232 L 133,220 L 126,208 L 119,196 L 112,184 L 106,172 L 102,162 L 98,152 L 95,142 L 93,132 L 92,122 L 92,112 L 93,102 L 95,92 L 98,82 L 102,72 L 107,62 L 113,52 L 120,42 L 128,32 L 138,22 L 148,14 L 160,9 L 175,6 L 190,5 L 205,6 Z"
+          fill="rgba(122,21,21,0.5)" stroke="rgba(180,150,80,0.45)" stroke-width="1.2"/>
+        <line x1="293" y1="12" x2="368" y2="456" stroke="rgba(100,160,220,0.18)" stroke-width="1" stroke-dasharray="3,4"/>
+        <text x="352" y="100" font-size="6" fill="rgba(100,160,220,0.35)" transform="rotate(88,352,100)">ATLANTIC</text>
+        <circle id="svgdot-pb" cx="310" cy="395" r="4" fill="#555"/>
+        <circle id="svgdot-martin" cx="322" cy="300" r="4" fill="#555"/>
+      </svg>
+      <div class="map-lbl">District coastline</div>
+      <div class="zones-list" id="zones-list">
+        <div class="zone-row"><div class="zone-pip pip-unknown"></div><div class="zone-info"><div class="zone-name">Loading...</div></div></div>
+      </div>
+    </div>
+
+    <div class="data-col">
+      <div>
+        <div class="section-label">Current conditions by zone</div>
+        <div class="banners" id="banners">
+          <div class="risk-banner banner-unknown"><div class="banner-detail">Fetching NWS data...</div></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="section-label">Multi-day outlook &mdash; all district zones</div>
+        <div class="forecast-wrap">
+          <table class="forecast-table">
+            <thead><tr id="forecast-head"><th>Zone</th><th>Today</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr></thead>
+            <tbody id="forecast-body"><tr><td colspan="6" style="font-size:11px;color:rgba(232,220,200,0.3);padding:10px 0;">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="safety-tip">
+        If caught in a rip current: don't fight it. Swim parallel to shore until free, then angle back to the beach. Signal for help if needed. &mdash;
+        <a href="https://www.weather.gov/safety/ripcurrent" target="_blank" rel="noopener">NWS Rip Current Safety</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-time" id="update-time">Updating...</div>
+    <div class="footer-src">NWS Melbourne (KMLB) &amp; NWS Miami (KMFL) &middot; mast.house.gov</div>
+  </div>
+</div>
+
+<script>
+  const PROXIES = [
+    url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  ];
+
+  const KMLB_URL = 'https://tgftp.nws.noaa.gov/data/raw/fz/fzus52.kmlb.srf.mlb.txt';
+  const KMFL_URL = 'https://tgftp.nws.noaa.gov/data/raw/fz/fzus52.kmfl.srf.mfl.txt';
+
+  async function fetchWithFallback(targetUrl) {
+    for (const proxy of PROXIES) {
+      try {
+        const res = await fetch(proxy(targetUrl), { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) continue;
+        const text = await res.text();
+        if (text && text.length > 100) return text;
+      } catch (e) { continue; }
+    }
+    throw new Error('All proxies failed');
+  }
+
+  function rc(r) {
+    if (!r) return 'unknown';
+    const u = r.toUpperCase();
+    if (u === 'HIGH') return 'high';
+    if (u === 'MODERATE') return 'moderate';
+    if (u === 'LOW') return 'low';
+    return 'unknown';
+  }
+
+  function parseField(text, label) {
+    const m = text.match(new RegExp(label + '[*\\s]*\\.+\\s*([^\\n]+)', 'i'));
+    return m ? m[1].trim().replace(/\.$/, '') : null;
+  }
+
+  function extractSection(raw, marker) {
+    const idx = raw.indexOf(marker);
+    if (idx === -1) return null;
+    const end = raw.indexOf('$$', idx);
+    return raw.slice(idx, end === -1 ? raw.length : end);
+  }
+
+  function getTodayBlock(section) {
+    const m = section.match(/\.(?:REST OF TODAY|TODAY)\.\.\.([\s\S]*?)(?=\.[A-Z]+\.\.\.|&&)/i);
+    return m ? m[1] : section;
+  }
+
+  function getDayBlock(section, dayName) {
+    const re = new RegExp('\\.' + dayName + '\\.\\.\\.' + '([\\s\\S]*?)(?=\\.[A-Z]+\\.\\.\\.|&&)', 'i');
+    const m = section.match(re);
+    return m ? m[1] : null;
+  }
+
+  const DISTRICT_ZONES = [
+    { key: 'sl_martin', feed: 'kmlb', marker: 'Coastal Saint Lucie-Coastal Martin', shortName: 'Coastal St. Lucie & Martin', beaches: 'Jensen Beach · Hobe Sound · Fort Pierce', svgDot: 'svgdot-martin' },
+    { key: 'palm_beach', feed: 'kmfl', marker: 'Coastal Palm Beach', shortName: 'Coastal Palm Beach', beaches: 'Palm Beach · Lake Worth Pier', svgDot: 'svgdot-pb' },
+  ];
+
+  const DAY_LABELS = [
+    { key: 'today' },
+    { key: 'wed', dayName: 'WEDNESDAY' },
+    { key: 'thu', dayName: 'THURSDAY' },
+    { key: 'fri', dayName: 'FRIDAY' },
+    { key: 'sat', dayName: 'SATURDAY' },
+  ];
+
+  async function loadAll() {
+    let kmlbRaw = '', kmflRaw = '';
+    try {
+      [kmlbRaw, kmflRaw] = await Promise.all([
+        fetchWithFallback(KMLB_URL),
+        fetchWithFallback(KMFL_URL),
+      ]);
+    } catch (e) {
+      document.getElementById('banners').innerHTML = `<div class="risk-banner banner-unknown"><div><div class="banner-label">Connection issue</div><div class="banner-detail">Could not reach NWS data. <a href="https://www.weather.gov/beach/florida" target="_blank" rel="noopener" style="color:rgba(180,150,80,0.8)">View on weather.gov</a></div></div></div>`;
+      document.getElementById('update-time').textContent = 'Last attempt: ' + new Date().toLocaleTimeString();
+      return;
+    }
+
+    const feeds = { kmlb: kmlbRaw, kmfl: kmflRaw };
+    const zoneData = [];
+
+    for (const zone of DISTRICT_ZONES) {
+      const raw = feeds[zone.feed];
+      const section = extractSection(raw, zone.marker);
+      if (!section) { zoneData.push({ ...zone, risk: null, surf: null, days: {} }); continue; }
+      const todayBlock = getTodayBlock(section);
+      const risk = parseField(todayBlock, 'Rip Current Risk');
+      const surf = parseField(todayBlock, 'Surf Height');
+      const waterTemp = parseField(todayBlock, 'Water Temperature');
+      const winds = parseField(todayBlock, 'Winds');
+      const tstorm = parseField(todayBlock, 'Thunderstorm Potential');
+      const days = {};
+      for (const d of DAY_LABELS) {
+        if (!d.dayName) { days[d.key] = { risk, surf }; continue; }
+        const block = getDayBlock(section, d.dayName);
+        days[d.key] = {
+          risk: block ? parseField(block, 'Rip Current Risk') : null,
+          surf: block ? parseField(block, 'Surf Height') : null,
+        };
+      }
+      zoneData.push({ ...zone, risk, surf, waterTemp, winds, tstorm, days });
+    }
+
+    document.getElementById('zones-list').innerHTML = zoneData.map(z => {
+      const cl = rc(z.risk);
+      return `<div class="zone-row">
+        <div class="zone-pip pip-${cl}"></div>
+        <div class="zone-info">
+          <div class="zone-name">${z.shortName}</div>
+          <div class="zone-beach">${z.beaches}</div>
+          <div class="zone-src">${z.feed.toUpperCase()}</div>
+        </div>
+        <div class="zone-risk risk-${cl}">${z.risk || '&mdash;'}</div>
+      </div>`;
+    }).join('');
+
+    const dotColors = { high: '#e05252', moderate: '#e09a30', low: '#4caf50', unknown: '#555' };
+    zoneData.forEach(z => {
+      const dot = document.getElementById(z.svgDot);
+      if (dot) dot.setAttribute('fill', dotColors[rc(z.risk)] || '#555');
+    });
+
+    document.getElementById('banners').innerHTML = zoneData.map(z => {
+      const cl = rc(z.risk);
+      const details = [
+        z.waterTemp ? 'Water ' + z.waterTemp : null,
+        z.winds ? z.winds.replace(/winds /i, '') : null,
+        z.tstorm ? 'Tstorm: ' + z.tstorm : null,
+      ].filter(Boolean).join(' &middot; ');
+      return `<div class="risk-banner banner-${cl}">
+        <div style="flex:1;min-width:0">
+          <div class="banner-label">${z.shortName}</div>
+          <div class="banner-risk risk-${cl}">${z.risk || '&mdash;'} Risk</div>
+          <div class="banner-detail">${details || '&mdash;'}</div>
+        </div>
+        <div style="flex-shrink:0">
+          <div class="banner-surf">${z.surf || '&mdash;'}</div>
+          <div class="banner-surf-lbl">surf height</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const now = new Date();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const cols = DAY_LABELS.map((d, i) => {
+      if (i === 0) return 'Today';
+      const dt = new Date(now);
+      dt.setDate(dt.getDate() + i);
+      return dayNames[dt.getDay()];
+    });
+    document.getElementById('forecast-head').innerHTML =
+      '<th style="min-width:120px">Zone</th>' + cols.map(c => `<th>${c}</th>`).join('');
+
+    document.getElementById('forecast-body').innerHTML = zoneData.map(z => {
+      const cells = DAY_LABELS.map(d => {
+        const day = z.days ? z.days[d.key] : null;
+        const r = day ? day.risk : null;
+        const cl = rc(r);
+        const s = day && day.surf
+          ? day.surf.replace(/feet/i, 'ft').replace(/foot or less/i, '&le;1ft')
+          : '';
+        return `<td><span class="risk-badge badge-${cl}">${r || '&mdash;'}</span>${s ? `<br><span style="font-size:9px;color:rgba(232,220,200,0.35)">${s}</span>` : ''}</td>`;
+      }).join('');
+      return `<tr><td>${z.shortName}</td>${cells}</tr>`;
+    }).join('');
+
+    document.getElementById('update-time').textContent =
+      'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short', timeZone: 'America/New_York' });
+  }
+
+  loadAll();
+  setInterval(loadAll, 10 * 60 * 1000);
+</script>
+</body>
+</html>
